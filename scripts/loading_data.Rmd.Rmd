@@ -18,7 +18,7 @@ here i am loading the dataset...
 
 ```{r}
 renv::activate()
-renv::init()
+#renv::init() with init you start a new instance of renv inside the current folder, so only do it one time per project at the main working directory
 renv::snapshot()
 ```
 
