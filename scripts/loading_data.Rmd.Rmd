@@ -7,6 +7,7 @@ output: html_document
 
 
 
+
 ```{r}
 pacman::p_load(readxl, here, ggplot2, dplyr, forcats, readr, tidyr, purrr)
 ```
@@ -27,26 +28,49 @@ renv::snapshot()
 
 
 ```{r}
-here("OM_data") %>% 
-  # list.dirs()
-  list.files()
+
+dirs <- "/Volumes/GroupOdening/Ruben/Experiment_Friburg/data" %>% 
+  list.files(full.names = TRUE, pattern = "xlsx$", recursive = TRUE) #%>% 
+
+
+
+dirs %>% 
+  length()
+
+dataframe <- dirs %>%
+# dirs %>% 
+  map_dfr( ~ read_xlsx(path = .x, 
+                       sheet = 1)) %>% 
+  mutate(across(where(is.character), factor)) %>% 
+  mutate(MAP = factor(MAP)) %>% 
+  mutate(Frequency = factor(Frequency)) %>% 
+  mutate(Sex = factor(Sex))
+                       # col_types = list(Animal = col_double())))
+
+
+dataframe %>% 
+  str
 ```
 
 
+
+
 ```{r}
-here()
-dataframe <- read_excel(path = here("OM_data", 
-                                    "OM data 1st week Ruben's version.xlsx"), 
-                        # col_types = list(Date = col_character()
-                          # Animal = col_factor(),
-                          # Genotype = col_factor(),
-                          # Sex = col_factor(),
-                          # Frequency = col_factor(),
-                          # Condition = col_factor(),
-                          # MAP = col_factor()
-                        # ),
-                        sheet = 1)
-dataframe %>% str()
+
+# here()
+
+# dataframe <- read_excel(path = here("OM_data", 
+#                                     "OM data 1st week Ruben's version.xlsx"), 
+#                         # col_types = list(Date = col_character()
+#                           # Animal = col_factor(),
+#                           # Genotype = col_factor(),
+#                           # Sex = col_factor(),
+#                           # Frequency = col_factor(),
+#                           # Condition = col_factor(),
+#                           # MAP = col_factor()
+#                         # ),
+#                         sheet = 1)
+# dataframe %>% str()
   
 ```
 
@@ -58,7 +82,8 @@ dataframe <- dataframe %>%
   mutate(across(where(is.character), factor)) %>% 
   mutate(MAP = factor(MAP)) %>% 
   mutate(Frequency = factor(Frequency)) %>% 
-  mutate(Sex = factor(Sex))
+  mutate(Sex = factor(Sex)) %>% 
+  mutate(Animal = factor(Animal))
 
 dataframe %>% 
   str
@@ -66,6 +91,10 @@ dataframe %>%
 
 
 ```
+
+
+
+
 
 ```{r}
 
@@ -83,19 +112,21 @@ dataframe %>%
 
 
 
-
+averaging replicates of MAP measurements
 
 ```{r}
 dataframe %>% 
-  nest(data =c(MAP, `APD 30`, `APD 75`, `APD 90`)) %>% 
+  nest(data =c(MAP, APD30, APD75, APD90)) %>% 
   mutate(data = map(data, ~ .x %>% 
                       group_by(MAP) %>% 
                       summarize(across(where(is.double), mean)))) %>% 
   unnest(cols = data) %>% 
+  select(-Sex, -Observations) %>% 
+  drop_na(APD30) %>% # just temporal for visual
   # mutate(id = factor(rep(1:718))) %>% 
   ggplot(aes(x = Condition,
-             y = `APD 30`,
-             shape = Animal,
+             y = APD30,
+             # shape = Animal,
              group = Animal,
              color  = Animal)) +
   geom_line() + 
@@ -104,29 +135,14 @@ dataframe %>%
 
 ```
 
+
 ```{r}
 dataframe %>% 
-  nest(data =c(MAP, `APD 30`, `APD 75`, `APD 90`)) %>% 
+  nest(data =c(MAP, APD30, APD75, APD90)) %>% 
   mutate(data = map(data, ~ .x %>% 
                       group_by(MAP) %>% 
                       summarize(across(where(is.double), mean)))) %>% 
   unnest(cols = data) %>% 
-  filter(Animal == "#1") %>% 
-  filter(Date == "13.10.2021") %>% 
-  filter(Frequency == 2)
-```
-
-
-
-
-```{r}
-dataframe %>% 
-  nest(data =c(MAP, `APD 30`, `APD 75`, `APD 90`)) %>% 
-  mutate(data = map(data, ~ .x %>% 
-                      group_by(MAP) %>% 
-                      summarize(across(where(is.double), mean)))) %>% 
-  unnest(cols = data) %>% 
-  filter(Animal == "#1") %>% 
-  filter(MAP == "1") 
+  drop_na(!APD30)
 ```
 
