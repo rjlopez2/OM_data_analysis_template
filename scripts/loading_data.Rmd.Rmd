@@ -9,7 +9,7 @@ output: html_document
 
 
 ```{r}
-pacman::p_load(readxl, here, ggplot2, dplyr, forcats, readr, tidyr, purrr)
+pacman::p_load(readxl, here, ggplot2, dplyr, forcats, readr, tidyr, purrr, cowplot)
 ```
 
 here i am loading the dataset...
@@ -44,7 +44,8 @@ dataframe <- dirs %>%
   mutate(across(where(is.character), factor)) %>% 
   mutate(MAP = factor(MAP)) %>% 
   mutate(Frequency = factor(Frequency)) %>% 
-  mutate(Sex = factor(Sex))
+  mutate(Sex = factor(Sex)) %>% 
+  mutate(Animal = factor(Animal))
                        # col_types = list(Animal = col_double())))
 
 
@@ -114,14 +115,22 @@ dataframe %>%
 
 averaging replicates of MAP measurements
 
-```{r}
-dataframe %>% 
+
+
+```{r, }
+average_apds_df <- dataframe %>% 
   nest(data =c(MAP, APD30, APD75, APD90)) %>% 
   mutate(data = map(data, ~ .x %>% 
                       group_by(MAP) %>% 
                       summarize(across(where(is.double), mean)))) %>% 
   unnest(cols = data) %>% 
-  select(-Sex, -Observations) %>% 
+  select(-Sex, -Observations)
+```
+
+
+```{r, fig.width= 6, fig.asp = 1.2}
+
+average_apds_df %>% 
   drop_na(APD30) %>% # just temporal for visual
   # mutate(id = factor(rep(1:718))) %>% 
   ggplot(aes(x = Condition,
@@ -131,8 +140,28 @@ dataframe %>%
              color  = Animal)) +
   geom_line() + 
   geom_point() +
-  facet_grid( MAP ~ Frequency)
+  facet_grid( MAP ~ Genotype + Frequency)
 
+```
+
+
+```{r, fig.width= 4, fig.asp = 1.2}
+
+apds <- c("APD30", "APD75", "APD90")
+
+apds %>% 
+  map(~ ggplot(data = average_apds_df,
+               aes_string(x = "Condition",
+                          y = .x,
+                          # shape = Animal,
+                          group = "Animal",
+                          color  = "Animal")) +
+                 geom_line() + 
+                 geom_point() +
+                 facet_grid( MAP ~ Genotype + Frequency)) %>% 
+  plot_grid(plotlist = .,
+            cols = 1)
+  
 ```
 
 
