@@ -150,7 +150,9 @@ average_apds_df %>%
 apds <- c("APD30", "APD75", "APD90")
 
 apds %>% 
-  map(~ ggplot(data = average_apds_df,
+  map(~ ggplot(data = average_apds_df %>% 
+                 filter(Genotype == "LQT2"),
+               
                aes_string(x = "Condition",
                           y = .x,
                           # shape = Animal,
